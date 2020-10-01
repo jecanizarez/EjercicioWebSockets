@@ -9,13 +9,12 @@ ws.onmessage = (msg) => {
 const renderMessages = (data) => {
   var contenido = ""
   for(let i = 0; i < data.length; i++){
-    dato = data[i].split(",");
-    message = dato[0];
-    author = dato[1];
+    dato = data[i];
+    message = dato.content;
+    author = dato.author;
     contenido += "<p><b>"+author+"</b>:" +message+"</p>";
   }
   document.getElementById("messages").innerHTML = contenido;
-
 };
 
 const handleSubmit = (evt) => {

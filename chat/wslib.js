@@ -1,16 +1,11 @@
 const WebSocket = require("ws");
-const Message = require('./models/message');
+const controller = require("./controller/controller");
 const clients = [];
 var messages = [];
 
-const cargarMensajes = () =>{
-  Message.findAll().then((result) =>{  
-    for(let i = 0; i < result.length; i++){
-      dato = result[i].message + ","+ result[i].author;
-      messages.push(dato);
-    }
-  });
-
+const cargarMensajes = async () =>{
+  allMessages = await controller.getMessages();
+  messages = allMessages;
 };  
 cargarMensajes();
 const wsConnection = (server) => {
@@ -20,10 +15,11 @@ const wsConnection = (server) => {
     clients.push(ws);
     sendMessages();
 
-    ws.on("message", (message) => {
+    ws.on("message", async (message) => {
       data = message.split(",");
-      Message.create({ message: data[0], author: data[1] }).then(() => console.log("Mensaje Guardado"));
-      messages.push(message);
+      obj = { content: data[0], author: data[1] }
+      await controller.insertMessage(obj);
+      messages.push(obj);
       sendMessages();
     });
   });

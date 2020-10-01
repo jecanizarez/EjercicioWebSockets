@@ -2,16 +2,15 @@ var express = require('express');
 var router = express.Router();
 
 const Joi = require('joi');
-var Message = require('../models/message');
+var controller = require("../controller/controller");
 /* GET home page. */
 router.get('/', function(req, res, next) {
   res.render('index');
 });
 
-router.get('/chat/api/messages', function (req, res, next) {
-  Message.findAll().then((result) => {
-    res.send(result);
-  });
+router.get('/chat/api/messages', async function (req, res, next) {
+  const messages = await controller.getMessages();
+  res.send(messages);
 });
 
 router.post('/chat/api/messages', function (req, res, next) {
@@ -20,53 +19,36 @@ router.post('/chat/api/messages', function (req, res, next) {
   if (error) {
     return res.status(400).send(error);
   }
-
-  Message.create({ message: req.body.message, author: req.body.author }).then(
-    (result) => {
-      res.send(result);
-    }
-  );
+  const newMessage = controller.insertMessage(req.body);
+  res.send(newMessage);
 });
 
-router.get('/chat/api/messages/:id', (req, res) => {
-  Message.findByPk(req.params.id).then((response) => {
-    if (response === null)
-      return res
-        .status(404)
-        .send('The Message with the given id was not found.');
-    res.send(response);
-  });
+router.get('/chat/api/messages/:id', async (req, res) => {
+  message = await controller.getMessage(req.params.id);
+  res.send(message);
 });
 
 
-router.put('/chat/api/messages/:id', (req, res) => {
+router.put('/chat/api/messages/:id', async (req, res) => {
   const { error } = validateMessage(req.body);
 
   if (error) {
     return res.status(400).send(error);
   }
-
-  Message.update(req.body, { where: { id: req.params.id } }).then((response) => {
-    if (response[0] !== 0) res.send({ message: 'Message updated' });
-    else res.status(404).send({ message: 'Message was not found' });
-  });
+  let message = await controller.update(req.params.id, req.body);
+  res.send(message);
 });
 
-router.delete('/chat/api/messages/:id', (req, res) => {
-  Message.destroy({
-    where: {
-      id: req.params.id,
-    },
-  }).then((response) => {
-    if (response === 1) res.status(204).send();
-    else res.status(404).send({ message: 'Message was not found' });
-  });
+router.delete('/chat/api/messages/:id', async(req, res) => {
+
+  let respuesta = await controller.deleteMessage(req.params.id);
+  res.send(respuesta);
 });
 
 const validateMessage = (message) => {
   const schema = Joi.object({
-    message: Joi.string().min(5).required(),
-    author: Joi.string().regex(new RegExp("/[a-zA-Z]+ [a-zA-Z]+$/")).required(),
+    content: Joi.string().min(5).required(),
+    author: Joi.string().regex(new RegExp("[a-zA-Z]+\s[a-zA-Z]+$")).required(),
   });
 
   return schema.validate(message);
